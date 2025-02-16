@@ -1,11 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectManagementApp.Data;
+using ProjectManagementApp.Interfaces;
+using ProjectManagementApp.Repositories;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add database context and configure SQL Server connection
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register repositories for Dependency Injection
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 
 // Add controllers and Swagger support
 builder.Services.AddControllers();
