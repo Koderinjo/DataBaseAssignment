@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjectManagementApp.Data;
 using ProjectManagementApp.Interfaces;
 using ProjectManagementApp.Repositories;
+using ProjectManagementApp.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register repositories for Dependency Injection
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
 
 // Add controllers and Swagger support
 builder.Services.AddControllers();
