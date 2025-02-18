@@ -4,8 +4,9 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
 using ProjectManagementApp.Models;
+using ProjectManagementConsole.Helpers;
 
-namespace ProjectManagementConsole
+namespace ProjectManagementConsole.Services
 {
     public class ProjectConsoleService
     {
@@ -53,7 +54,7 @@ namespace ProjectManagementConsole
                 Console.WriteLine($"Error fetching projects: {ex.Message}");
             }
 
-            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.WriteLine("\nPress any key to return...");
             Console.ReadKey();
         }
 
@@ -62,130 +63,97 @@ namespace ProjectManagementConsole
             Console.Clear();
             Console.WriteLine("=== Create New Project ===\n");
 
+            Console.Write("Enter project name: ");
+            var name = Console.ReadLine() ?? "";
+
+            Console.Write("Enter project number: ");
+            var projectNumber = Console.ReadLine() ?? "";
+
+            Console.Write("Enter project manager: ");
+            var manager = Console.ReadLine() ?? "";
+
+            Console.Write("Enter customer ID: ");
+            int.TryParse(Console.ReadLine(), out int customerId);
+
+            Console.Write("Enter project start date (yyyy-MM-dd): ");
+            DateTime startDate = DateTime.Now;
+            if (DateTime.TryParse(Console.ReadLine(), out var parsedStartDate))
+                startDate = parsedStartDate;
+
+            Console.Write("Enter project end date (yyyy-MM-dd, optional): ");
+            DateTime? endDate = null;
+            var endDateInput = Console.ReadLine();
+            if (!string.IsNullOrWhiteSpace(endDateInput) && DateTime.TryParse(endDateInput, out var parsedEndDate))
+                endDate = parsedEndDate;
+
+            Console.Write("Enter project status: ");
+            var status = Console.ReadLine() ?? "Not Started";
+
+            Console.Write("Enter total price: ");
+            decimal totalPrice = 0;
+            if (decimal.TryParse(Console.ReadLine(), out var parsedPrice))
+                totalPrice = parsedPrice;
+
+            var newProject = new Project
+            {
+                Name = name,
+                ProjectNumber = projectNumber,
+                StartDate = startDate,
+                EndDate = endDate,
+                Status = status,
+                ProjectManager = manager,
+                CustomerId = customerId,
+                TotalPrice = totalPrice
+            };
+
             try
             {
-                Console.Write("Enter project name: ");
-                var name = Console.ReadLine() ?? "";
-
-                Console.Write("Enter project number: ");
-                var projectNumber = Console.ReadLine() ?? "";
-
-                Console.Write("Enter project manager: ");
-                var manager = Console.ReadLine() ?? "";
-
-                Console.Write("Enter customer ID (default=1 if unsure): ");
-                var custIdInput = Console.ReadLine();
-                int customerId = 1;
-                if (int.TryParse(custIdInput, out int tempId))
-                    customerId = tempId;
-
-                var newProject = new Project
-                {
-                    Name = name,
-                    ProjectNumber = projectNumber,
-                    StartDate = DateTime.Now,
-                    EndDate = DateTime.Now.AddMonths(1),
-                    Status = "Not Started",
-                    ProjectManager = manager,
-                    CustomerId = customerId,
-                    TotalPrice = 1000.0M
-                };
-
                 var response = await _httpClient.PostAsJsonAsync("api/Project", newProject);
-
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("Project created successfully!");
+                    Console.WriteLine("\nProject created successfully!");
                 }
                 else
                 {
-                    Console.WriteLine($"Failed to create project. Status Code: {response.StatusCode}");
+                    Console.WriteLine($"\nFailed to create project. Status: {response.StatusCode}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error creating project: {ex.Message}");
+                Console.WriteLine($"\nError creating project: {ex.Message}");
             }
 
-            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.WriteLine("\nPress any key to return...");
             Console.ReadKey();
         }
 
         public async Task UpdateProjectAsync()
         {
             Console.Clear();
-            Console.WriteLine("=== Detailed View: Edit a Project ===\n");
+            Console.WriteLine("=== Edit a Project ===");
 
             Console.Write("Enter the Project ID to edit: ");
-            var input = Console.ReadLine() ?? "";
-            if (!int.TryParse(input, out int projectId))
+            if (!int.TryParse(Console.ReadLine(), out int projectId))
             {
                 Console.WriteLine("Invalid ID. Press any key to return...");
                 Console.ReadKey();
                 return;
             }
 
+            var existingProject = await _httpClient.GetFromJsonAsync<Project>($"api/Project/{projectId}");
+            if (existingProject == null)
+            {
+                Console.WriteLine("Project not found. Press any key to return...");
+                Console.ReadKey();
+                return;
+            }
+
+            existingProject.Name = ConsoleHelper.GetUpdatedValue($"Current Name: {existingProject.Name}", existingProject.Name);
+            existingProject.Status = ConsoleHelper.GetUpdatedValue($"Current Status: {existingProject.Status}", existingProject.Status);
+            existingProject.ProjectManager = ConsoleHelper.GetUpdatedValue($"Current Project Manager: {existingProject.ProjectManager}", existingProject.ProjectManager);
+
             try
             {
-                var existingProject = await _httpClient.GetFromJsonAsync<Project>($"api/Project/{projectId}");
-                if (existingProject == null)
-                {
-                    Console.WriteLine("Project not found. Press any key to return...");
-                    Console.ReadKey();
-                    return;
-                }
-
-                Console.WriteLine($"Current Name: {existingProject.Name}");
-                Console.Write("New name (press Enter to keep current): ");
-                var newName = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newName))
-                    existingProject.Name = newName;
-
-                Console.WriteLine($"Current Start Date: {existingProject.StartDate}");
-                Console.Write("New Start Date (press Enter to keep current, format yyyy-MM-dd): ");
-                var newStart = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newStart) && DateTime.TryParse(newStart, out var parsedStart))
-                    existingProject.StartDate = parsedStart;
-
-                Console.WriteLine($"Current End Date: {existingProject.EndDate}");
-                Console.Write("New End Date (press Enter to keep current, format yyyy-MM-dd): ");
-                var newEnd = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newEnd) && DateTime.TryParse(newEnd, out var parsedEnd))
-                    existingProject.EndDate = parsedEnd;
-
-                Console.WriteLine($"Current Status: {existingProject.Status}");
-                Console.Write("New status (press Enter to keep current): ");
-                var newStatus = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newStatus))
-                    existingProject.Status = newStatus;
-
-                Console.WriteLine($"Current Project Manager: {existingProject.ProjectManager}");
-                Console.Write("New project manager (press Enter to keep current): ");
-                var newManager = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newManager))
-                    existingProject.ProjectManager = newManager;
-
-                Console.WriteLine($"Current CustomerId: {existingProject.CustomerId}");
-                Console.Write("New CustomerId (press Enter to keep current): ");
-                var newCustId = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newCustId) && int.TryParse(newCustId, out var parsedCustId))
-                    existingProject.CustomerId = parsedCustId;
-
-                Console.WriteLine($"Current TotalPrice: {existingProject.TotalPrice}");
-                Console.Write("New TotalPrice (press Enter to keep current): ");
-                var newPrice = Console.ReadLine();
-                if (!string.IsNullOrWhiteSpace(newPrice) && decimal.TryParse(newPrice, out var parsedPrice))
-                    existingProject.TotalPrice = parsedPrice;
-
-                Console.WriteLine("\nPress 'S' to Save changes, or 'C' to Cancel.");
-                var choice = Console.ReadKey().KeyChar;
-                if (char.ToUpper(choice) != 'S')
-                {
-                    Console.WriteLine("\nEdit canceled. Press any key to return...");
-                    Console.ReadKey();
-                    return;
-                }
-
                 var response = await _httpClient.PutAsJsonAsync($"api/Project/{projectId}", existingProject);
                 if (response.IsSuccessStatusCode)
                 {
@@ -193,9 +161,7 @@ namespace ProjectManagementConsole
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
-
-                    Console.WriteLine($"\nFailed to update project. {errorContent}");
+                    Console.WriteLine($"\nFailed to update project.");
                 }
             }
             catch (Exception ex)
@@ -203,7 +169,7 @@ namespace ProjectManagementConsole
                 Console.WriteLine($"Error updating project: {ex.Message}");
             }
 
-            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.WriteLine("\nPress any key to return...");
             Console.ReadKey();
         }
 
@@ -213,9 +179,7 @@ namespace ProjectManagementConsole
             Console.WriteLine("=== Delete Project ===\n");
 
             Console.Write("Enter the Project ID to delete: ");
-            var input = Console.ReadLine() ?? "";
-
-            if (!int.TryParse(input, out int projectId))
+            if (!int.TryParse(Console.ReadLine(), out int projectId))
             {
                 Console.WriteLine("Invalid ID. Press any key to return...");
                 Console.ReadKey();
@@ -224,22 +188,15 @@ namespace ProjectManagementConsole
 
             try
             {
-                var response = await _httpClient.DeleteAsync($"api/Project/{projectId}");
-                if (response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"Project with ID {projectId} deleted successfully!");
-                }
-                else
-                {
-                    Console.WriteLine($"Failed to delete project. Status: {response.StatusCode}");
-                }
+                await _httpClient.DeleteAsync($"api/Project/{projectId}");
+                Console.WriteLine("Project deleted successfully!");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error deleting project: {ex.Message}");
             }
 
-            Console.WriteLine("\nPress any key to return to the main menu...");
+            Console.WriteLine("\nPress any key to return...");
             Console.ReadKey();
         }
     }

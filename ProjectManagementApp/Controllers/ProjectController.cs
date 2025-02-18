@@ -7,14 +7,9 @@ namespace ProjectManagementApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProjectController : ControllerBase
+    public class ProjectController(IProjectService projectService) : ControllerBase
     {
-        private readonly IProjectService _projectService;
-
-        public ProjectController(IProjectService projectService)
-        {
-            _projectService = projectService;
-        }
+        private readonly IProjectService _projectService = projectService;
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Project>>> GetProjects()
