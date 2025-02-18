@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ProjectManagementApp.Interfaces;
 using ProjectManagementApp.Models;
 
@@ -45,11 +46,18 @@ namespace ProjectManagementApp.Controllers
         {
             if (id != project.Id)
             {
-                return BadRequest();
+                return BadRequest("Project ID mismatch.");
             }
 
-            await _projectService.UpdateProjectAsync(project);
-            return NoContent();
+            try
+            {
+                await _projectService.UpdateProjectAsync(project);
+                return NoContent();
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest("Invalid Customer ID.");
+            }
         }
 
         [HttpDelete("{id}")]
