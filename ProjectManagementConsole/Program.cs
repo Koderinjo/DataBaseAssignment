@@ -12,13 +12,11 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // Load configuration (appsettings.json)
         var configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory()) // Ensures correct directory
+            .SetBasePath(Directory.GetCurrentDirectory()) 
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
-        // Setup DI container
         var services = new ServiceCollection();
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
@@ -33,7 +31,6 @@ class Program
 
         var serviceProvider = services.BuildServiceProvider();
 
-        // Run the menu
         var menuService = serviceProvider.GetRequiredService<MenuService>();
         await menuService.RunAsync();
     }
